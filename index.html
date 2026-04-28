@@ -24,6 +24,7 @@
 
     <main>
         <div class="dex-container">
+            <!-- PANNELLO SINISTRO - GRIGLIA -->
             <div class="dex-screen">
                 <div class="search-section">
                     <div class="search-bar">
@@ -54,16 +55,14 @@
                 </div>
 
                 <div id="animalGrid" class="animal-grid"></div>
-                
                 <div class="pagination" id="pagination"></div>
             </div>
 
+            <!-- PANNELLO DESTRO - DETTAGLIO -->
             <div class="dex-detail" id="dexDetail">
                 <div class="detail-screen">
                     <div class="detail-image-container">
                         <img id="detailImage" src="images/placeholder.png" alt="Seleziona un animale" class="detail-image">
-                        <div class="image-border-top"></div>
-                        <div class="image-border-bottom"></div>
                     </div>
                     
                     <div class="detail-info">
@@ -112,20 +111,21 @@
                     </div>
                 </div>
 
-<div class="map-section">
-    <h3>Distribuzione in Europa</h3>
-    <div id="europeMap" class="europe-map">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Blank_map_of_Europe_%28polar_stereographic_projection%29.svg/800px-Blank_map_of_Europe_%28polar_stereographic_projection%29.svg.png" 
-             alt="Mappa Europa" 
-             style="width:100%; max-width:400px; display:block; margin:0 auto;">
-    </div>
-    <div class="map-legend">
-        <span class="legend-item"><span class="legend-dot common"></span> Comune</span>
-        <span class="legend-item"><span class="legend-dot present"></span> Presente</span>
-        <span class="legend-item"><span class="legend-dot rare"></span> Raro</span>
-        <span class="legend-item"><span class="legend-dot absent"></span> Assente</span>
-    </div>
-</div>
+                <!-- MAPPA EUROPA CON IMMAGINE STATICA -->
+                <div class="map-section">
+                    <h3>Distribuzione in Europa</h3>
+                    <div id="europeMap" class="europe-map">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Blank_map_of_Europe_%28polar_stereographic_projection%29.svg/800px-Blank_map_of_Europe_%28polar_stereographic_projection%29.svg.png" 
+                             alt="Mappa Europa" 
+                             style="width:100%; max-width:100%; display:block; margin:0 auto; border-radius:5px;">
+                    </div>
+                    <div class="map-legend">
+                        <span class="legend-item"><span class="legend-dot common"></span> Comune</span>
+                        <span class="legend-item"><span class="legend-dot present"></span> Presente</span>
+                        <span class="legend-item"><span class="legend-dot rare"></span> Raro</span>
+                        <span class="legend-item"><span class="legend-dot absent"></span> Assente</span>
+                    </div>
+                </div>
 
                 <div class="additional-info">
                     <div class="info-tabs">
