@@ -1,205 +1,173 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EuroDex - Enciclopedia Animali Europei</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-</head>
-<body>
-    <!-- Sfondo stile Pokémon Smeraldo -->
-    <div class="background-overlay"></div>
+class EuroDex {
+    constructor() {
+        this.animals = [];
+        this.filteredAnimals = [];
+        this.selectedAnimal = null;
+        this.currentPage = 1;
+        this.itemsPerPage = 30;
+        this.totalPages = 1;
+        this.init();
+    }
     
-    <!-- Header -->
-    <header>
-        <div class="header-top">
-            <h1 class="title">EURODEX</h1>
-            <div class="subtitle">Enciclopedia Animali Europei</div>
-        </div>
-        <div class="header-decoration">
-            <div class="led left-led"></div>
-            <div class="led right-led"></div>
-            <div class="scan-line"></div>
-        </div>
-    </header>
-
-    <!-- Contenitore principale -->
-    <main>
-        <!-- Pannello sinistro - Griglia animali -->
-        <div class="dex-container">
-            <div class="dex-screen">
-                <!-- Barra di ricerca e filtri -->
-                <div class="search-section">
-                    <div class="search-bar">
-                        <input type="text" id="searchInput" placeholder="Cerca animale..." class="search-input">
-                        <button id="searchButton" class="search-button">🔍</button>
-                    </div>
-                    <div class="filter-buttons">
-                        <select id="habitatFilter" class="filter-select">
-                            <option value="all">Tutti gli habitat</option>
-                            <option value="foreste">🌲 Foreste</option>
-                            <option value="montagne">🏔️ Montagne</option>
-                            <option value="zone umide">💧 Zone Umide</option>
-                            <option value="praterie">🌾 Praterie</option>
-                            <option value="costiere">🏖️ Costiere</option>
-                            <option value="urbane">🏙️ Urbane</option>
-                            <option value="tundra">❄️ Tundra</option>
-                        </select>
-                        <select id="classFilter" class="filter-select">
-                            <option value="all">Tutte le classi</option>
-                            <option value="mammiferi">🐾 Mammiferi</option>
-                            <option value="uccelli">🐦 Uccelli</option>
-                            <option value="rettili">🦎 Rettili</option>
-                            <option value="anfibi">🐸 Anfibi</option>
-                            <option value="pesci">🐟 Pesci</option>
-                            <option value="insetti">🦋 Insetti</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Griglia animali -->
-                <div id="animalGrid" class="animal-grid">
-                    <!-- Popolato da JavaScript -->
-                </div>
-                
-                <!-- Navigazione pagine -->
-                <div class="pagination" id="pagination">
-                    <!-- Popolato da JavaScript -->
-                </div>
+    async init() {
+        await this.loadAnimals();
+        this.setupEventListeners();
+        this.renderAnimalGrid();
+        this.renderPagination();
+    }
+    
+    async loadAnimals() {
+        try {
+            const response = await fetch('data/animals.json');
+            const data = await response.json();
+            this.animals = data.animals;
+            this.filteredAnimals = [...this.animals];
+            this.totalPages = Math.ceil(this.filteredAnimals.length / this.itemsPerPage);
+            console.log(this.animals.length + ' animali caricati!');
+        } catch (error) {
+            console.error('Errore:', error);
+        }
+    }
+    
+    setupEventListeners() {
+        document.getElementById('searchInput').addEventListener('input', () => this.applyFilters());
+        document.getElementById('habitatFilter').addEventListener('change', () => this.applyFilters());
+        document.getElementById('classFilter').addEventListener('change', () => this.applyFilters());
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', (e) => this.switchTab(e.target.dataset.tab));
+        });
+    }
+    
+    applyFilters() {
+        const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+        const habitatFilter = document.getElementById('habitatFilter').value;
+        const classFilter = document.getElementById('classFilter').value;
+        
+        this.filteredAnimals = this.animals.filter(animal => {
+            const matchesSearch = animal.name.toLowerCase().includes(searchQuery);
+            const matchesHabitat = habitatFilter === 'all' || animal.habitat === habitatFilter;
+            const matchesClass = classFilter === 'all' || animal.class === classFilter;
+            return matchesSearch && matchesHabitat && matchesClass;
+        });
+        
+        this.currentPage = 1;
+        this.totalPages = Math.ceil(this.filteredAnimals.length / this.itemsPerPage) || 1;
+        this.renderAnimalGrid();
+        this.renderPagination();
+    }
+    
+    renderAnimalGrid() {
+        const grid = document.getElementById('animalGrid');
+        const start = (this.currentPage - 1) * this.itemsPerPage;
+        const end = start + this.itemsPerPage;
+        const pageAnimals = this.filteredAnimals.slice(start, end);
+        
+        grid.innerHTML = pageAnimals.map(animal => `
+            <div class="animal-card ${this.selectedAnimal && this.selectedAnimal.id === animal.id ? 'selected' : ''}" 
+                 onclick="euroDex.selectAnimal(${animal.id})">
+                <img src="${animal.image}" alt="${animal.name}" class="animal-card-image" onerror="this.style.display='none'">
+                <div class="animal-card-number">N° ${String(animal.id).padStart(3, '0')}</div>
+                <div class="animal-card-name">${animal.name}</div>
             </div>
+        `).join('');
+    }
+    
+    renderPagination() {
+        const pagination = document.getElementById('pagination');
+        if (this.totalPages <= 1) {
+            pagination.innerHTML = '<span class="page-info">Pagina 1 di 1</span>';
+            return;
+        }
+        pagination.innerHTML = `
+            <button class="page-button" onclick="euroDex.changePage(-1)" ${this.currentPage === 1 ? 'disabled' : ''}>← Prec</button>
+            <span class="page-info">Pagina ${this.currentPage} di ${this.totalPages}</span>
+            <button class="page-button" onclick="euroDex.changePage(1)" ${this.currentPage === this.totalPages ? 'disabled' : ''}>Succ →</button>
+        `;
+    }
+    
+    changePage(delta) {
+        this.currentPage = Math.max(1, Math.min(this.totalPages, this.currentPage + delta));
+        this.renderAnimalGrid();
+        this.renderPagination();
+    }
+    
+    selectAnimal(id) {
+        this.selectedAnimal = this.animals.find(a => a.id === id);
+        this.renderAnimalGrid();
+        this.showAnimalDetail();
+    }
+    
+    showAnimalDetail() {
+        if (!this.selectedAnimal) return;
+        const animal = this.selectedAnimal;
+        
+        document.getElementById('detailNumber').textContent = 'N° ' + String(animal.id).padStart(3, '0');
+        document.getElementById('detailName').textContent = animal.name;
+        document.getElementById('detailClass').textContent = animal.class || '---';
+        document.getElementById('detailHabitat').textContent = animal.habitat || '---';
+        
+        document.getElementById('sizeBar').style.width = Math.min(100, (animal.size / 300) * 100) + '%';
+        document.getElementById('sizeValue').textContent = (animal.size || '?') + ' cm';
+        document.getElementById('weightBar').style.width = Math.min(100, (animal.weight / 500) * 100) + '%';
+        document.getElementById('weightValue').textContent = (animal.weight || '?') + ' kg';
+        document.getElementById('lifespanBar').style.width = Math.min(100, (animal.lifespan / 40) * 100) + '%';
+        document.getElementById('lifespanValue').textContent = (animal.lifespan || '?') + ' anni';
+        
+        const populationMap = {'Abbondante': 100, 'Comune': 75, 'Stabile': 50, 'In declino': 25, 'Rara': 10};
+        document.getElementById('populationBar').style.width = (populationMap[animal.population] || 50) + '%';
+        document.getElementById('populationValue').textContent = animal.population || '---';
+        
+        document.getElementById('detailDescription').innerHTML = `
+            <p><strong>Nome scientifico:</strong> ${animal.scientificName || '---'}</p>
+            <p>${animal.description || 'Nessuna descrizione disponibile.'}</p>
+        `;
+        document.getElementById('detailImage').src = animal.image || '';
+        
+        this.updateMap(animal.distribution || []);
+        this.switchTab('diet');
+    }
+    
+    updateMap(distribution) {
+        // Resetta tutti i paesi
+        document.querySelectorAll('.country').forEach(country => {
+            country.classList.remove('highlighted');
+        });
+        
+        // Se non ci sono dati, evidenzia qualche paese a caso per testing
+        if (!distribution || distribution.length === 0) {
+            distribution = ['it', 'fr', 'de'];
+        }
+        
+        // Evidenzia i paesi nella mappa
+        document.querySelectorAll('.country').forEach(country => {
+            const countryCodes = country.dataset.country.split(',');
+            const isPresent = distribution.some(d => countryCodes.includes(d));
+            if (isPresent) {
+                country.classList.add('highlighted');
+            }
+        });
+    }
+    
+    switchTab(tab) {
+        if (!this.selectedAnimal) return;
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        const activeTab = document.querySelector('[data-tab="' + tab + '"]');
+        if (activeTab) activeTab.classList.add('active');
+        
+        const animal = this.selectedAnimal;
+        const content = document.getElementById('tabContent');
+        
+        if (tab === 'diet') {
+            content.innerHTML = '<p><strong>Dieta:</strong> ' + (animal.diet || '---') + '</p>';
+        } else if (tab === 'behavior') {
+            content.innerHTML = '<p><strong>Comportamento:</strong> ' + (animal.behavior || '---') + '</p>';
+        } else if (tab === 'conservation') {
+            content.innerHTML = '<p><strong>Stato:</strong> ' + (animal.conservation || 'LC') + '</p><p><strong>Popolazione:</strong> ' + (animal.population || '---') + '</p>';
+        }
+    }
+}
 
-            <!-- Pannello destro - Dettaglio animale -->
-            <div class="dex-detail" id="dexDetail">
-                <div class="detail-screen">
-                    <!-- Immagine animale -->
-                    <div class="detail-image-container">
-                        <img id="detailImage" src="placeholder.png" alt="Seleziona un animale" class="detail-image">
-                        <div class="image-border-top"></div>
-                        <div class="image-border-bottom"></div>
-                    </div>
-                    
-                    <!-- Informazioni base -->
-                    <div class="detail-info">
-                        <div class="detail-number" id="detailNumber">N° 000</div>
-                        <h2 class="detail-name" id="detailName">Seleziona un animale</h2>
-                        <div class="detail-types">
-                            <span id="detailClass" class="type-badge"></span>
-                            <span id="detailHabitat" class="type-badge habitat-badge"></span>
-                        </div>
-                        
-                        <!-- Stats bar -->
-                        <div class="stats-container">
-                            <h3>Caratteristiche</h3>
-                            <div class="stat-row">
-                                <span class="stat-label">Dimensione</span>
-                                <div class="stat-bar-bg">
-                                    <div id="sizeBar" class="stat-bar-fill size-bar" style="width: 0%"></div>
-                                </div>
-                                <span id="sizeValue" class="stat-value">-</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-label">Peso</span>
-                                <div class="stat-bar-bg">
-                                    <div id="weightBar" class="stat-bar-fill weight-bar" style="width: 0%"></div>
-                                </div>
-                                <span id="weightValue" class="stat-value">-</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-label">Longevità</span>
-                                <div class="stat-bar-bg">
-                                    <div id="lifespanBar" class="stat-bar-fill lifespan-bar" style="width: 0%"></div>
-                                </div>
-                                <span id="lifespanValue" class="stat-value">-</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-label">Popolazione</span>
-                                <div class="stat-bar-bg">
-                                    <div id="populationBar" class="stat-bar-fill population-bar" style="width: 0%"></div>
-                                </div>
-                                <span id="populationValue" class="stat-value">-</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Descrizione -->
-                    <div class="detail-description" id="detailDescription">
-                        <p>Seleziona un animale dalla griglia per vedere i dettagli.</p>
-                    </div>
-                </div>
-
-                <!-- Mappa Europa -->
-                <div class="map-section">
-                    <h3>Distribuzione in Europa</h3>
-                    <div id="europeMap" class="europe-map">
-                        <!-- Mappa SVG dell'Europa -->
-                        <svg viewBox="0 0 800 600" class="map-svg">
-                            <!-- Paesi europei semplificati -->
-                            <g id="countries-group">
-                                <!-- Penisola Iberica -->
-                                <path d="M100,400 L80,450 L60,480 L40,500 L20,520 L30,540 L50,550 L70,540 L90,530 L110,520 L130,510 L150,500 L140,480 L130,460 L120,430 L110,410 Z" 
-                                      id="spain-portugal" class="country" data-country="es,pt"/>
-                                <!-- Francia -->
-                                <path d="M140,300 L160,280 L180,270 L200,280 L220,290 L230,310 L220,330 L210,350 L190,370 L170,390 L150,400 L140,380 L130,360 L120,340 L130,320 Z" 
-                                      id="france" class="country" data-country="fr"/>
-                                <!-- Italia -->
-                                <path d="M230,370 L240,360 L250,380 L260,400 L255,420 L250,440 L240,460 L235,470 L230,460 L225,440 L220,420 L225,400 Z" 
-                                      id="italy" class="country" data-country="it"/>
-                                <!-- Germania -->
-                                <path d="M230,280 L250,260 L270,250 L290,260 L300,280 L310,310 L300,330 L280,340 L260,330 L240,320 L230,300 Z" 
-                                      id="germany" class="country" data-country="de"/>
-                                <!-- Scandinavia -->
-                                <path d="M280,100 L300,80 L320,70 L340,80 L350,100 L340,120 L330,140 L320,160 L310,180 L290,200 L280,190 L270,170 L265,150 L270,130 Z" 
-                                      id="scandinavia" class="country" data-country="no,se,fi"/>
-                                <!-- Europa dell'Est -->
-                                <path d="M310,260 L340,250 L370,260 L390,280 L400,310 L390,340 L370,360 L340,350 L320,330 L310,300 Z" 
-                                      id="eastern-europe" class="country" data-country="pl,cz,sk,hu"/>
-                                <!-- Balcani -->
-                                <path d="M340,370 L360,380 L380,400 L390,430 L380,460 L360,470 L340,460 L330,440 L325,420 L330,400 Z" 
-                                      id="balkans" class="country" data-country="ro,bg,gr,hr,rs"/>
-                                <!-- UK/Irlanda -->
-                                <path d="M120,250 L140,240 L150,260 L140,280 L130,290 L115,280 L110,270 Z" 
-                                      id="uk-ireland" class="country" data-country="gb,ie"/>
-                            </g>
-                            <!-- Marcatori distribuzione -->
-                            <g id="distribution-markers">
-                                <!-- Popolato da JavaScript -->
-                            </g>
-                        </svg>
-                    </div>
-                    <div class="map-legend">
-                        <span class="legend-item"><span class="legend-dot common"></span> Comune</span>
-                        <span class="legend-item"><span class="legend-dot present"></span> Presente</span>
-                        <span class="legend-item"><span class="legend-dot rare"></span> Raro</span>
-                        <span class="legend-item"><span class="legend-dot absent"></span> Assente</span>
-                    </div>
-                </div>
-
-                <!-- Informazioni aggiuntive -->
-                <div class="additional-info">
-                    <div class="info-tabs">
-                        <button class="tab-button active" data-tab="diet">🍽 Dieta</button>
-                        <button class="tab-button" data-tab="behavior">🧠 Comportamento</button>
-                        <button class="tab-button" data-tab="conservation">🛡 Stato</button>
-                    </div>
-                    <div class="tab-content" id="tabContent">
-                        <p>Seleziona un animale per vedere le informazioni.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Footer -->
-    <footer>
-        <p>© 2024 EuroDex - Enciclopedia Interattiva degli Animali Europei</p>
-        <p>Dati scientifici verificati - Progetto open source su GitHub</p>
-    </footer>
-
-    <script src="script.js"></script>
-    <script src="data/animals_batch1.json"></script>
-    <script src="data/animals_batch2.json"></script>
-    <script src="data/animals_batch3.json"></script>
-    <script src="data/animals_batch4.json"></script>
-</body>
-</html>
+let euroDex;
+document.addEventListener('DOMContentLoaded', function() {
+    euroDex = new EuroDex();
+});
